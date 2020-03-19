@@ -42,7 +42,16 @@ def tweetClustering(tweets, numOfClusters):
     
     text = vectorizer.fit_transform(tweetTexts)
     modelText = KMeans(n_clusters=numOfClusters, init='k-means++', max_iter=100, n_init=1)
-    modelText.fit(text)
+    labels = modelText.fit_predict(text)
+
+    clusterTweets = {}
+
+    #Calculates size of each cluster group (number of tweets used to make cluster)
+    for i in range(len(tweets)):
+        if labels[i] in clusterTweets:
+            clusterTweets[labels[i]].append(tweets[i])
+        else:
+            clusterTweets[labels[i]] = [tweets[i]]
    
     centroids = modelText.cluster_centers_.argsort()[:, ::-1]
     termsText = vectorizer.get_feature_names()
@@ -57,6 +66,7 @@ def tweetClustering(tweets, numOfClusters):
                 file.write(termsText[ind] + '\n')
             print("\n")
             file.write("\n")
+    
     
     '''
     Attempted to cluster hashtags however when writing to file I encounter errors
@@ -78,6 +88,8 @@ def tweetClustering(tweets, numOfClusters):
                 file.write(termsHashtags[ind] + '\n')
             print("\n")
             file.write("\n")'''
+    
+    return clusterTweets
 
 
 '''
@@ -165,7 +177,10 @@ def tweetNetworks(tweets):
                             hashtagsOccurences[first].append(hashtag2['text'])
         
     return normalMentions, retweetMentions, quoteMentions, hashtagsOccurences
-                
+
+'''
+Calculates the ties and triads across the three user interaction networks
+'''             
 def ties_triads(normalMentions, retweetMentions, quoteMentions):
     ties = []
     triads = []
@@ -187,33 +202,7 @@ def ties_triads(normalMentions, retweetMentions, quoteMentions):
 
                         #Checks that the first node is not the same as the third node
                         if (user1 != user3):
-                            triads.append(potentialTriad)
-    '''
-    for network in networks:
-        print (len(network.keys()))
-        for user1 in network.keys():
-            for user2 in network[user1]:
-                potentialTie = list([user1, user2])
-   
-                #If tie does not already exist then appends to tie list
-                if potentialTie not in ties:
-                    pass
-                    ties.append(potentialTie)
-
-     
-    for tie in ties:
-        baseTie = tie
-
-        for tieCompare in ties:
-            
-            #Checking that the ties nodes are connected and the third node is not the same as the first node
-            if (baseTie[1] == tieCompare[0] and baseTie[0] != tieCompare[1]):
-                potentialTriad = list([baseTie[0],baseTie[1],tieCompare[1]])
-
-                #If triad does not already exist then appends to triad list
-                if potentialTriad not in triads:
-                    triads.append(potentialTriad)
-    '''               
+                            triads.append(potentialTriad)       
 
     return ties, triads
 
@@ -227,28 +216,34 @@ if __name__ == "__main__":
     tweets = []
     tweets.extend(db['raw'].find())
     
-
     numOfClusters = 10
 
-    #retrieves most popular hashtags and words used in tweets
-    tweetClustering(tweets, numOfClusters)
-
     #finds most mentioned users
-    print(powerUsers(tweets))
+    print("The ten most mentioned users are " + str(powerUsers(tweets)))
+
+    #retrieves most popular hashtags and words used in tweets
+    clusterTweets = tweetClustering(tweets, numOfClusters)
+
+    
 
     #Find the networks for general data
     gen_normalMentions, gen_retweetMentions, gen_quoteMentions, gen_hashtagsOccurences = tweetNetworks(tweets)
 
+    print("Normal mentions for general data has a size of " + str(len(gen_normalMentions.keys())))
+    print("Retween mentions for general data has a size of " + str(len(gen_retweetMentions.keys())))
+    print("Quote mentions for general data has a size of " + str(len(gen_quoteMentions.keys())))
+    print("Hashtag co-ocurrences for general data has a size of " + str(len(gen_hashtagsOccurences.keys())))
+
     #Find the networks for each cluster
-    #for i in range(numOfClusters):
-    #    tweetNetworks(cluster)
+    for cluster in clusterTweets:
+        tweetNetworks(cluster)
 
     #Find the ties and triads for general data
-    gen_ties, gen_triads= ties_triads(gen_normalMentions, gen_retweetMentions, gen_quoteMentions)
+    #gen_ties, gen_triads= ties_triads(gen_normalMentions, gen_retweetMentions, gen_quoteMentions)
     #print(gen_ties)
     #print(gen_triads)
-    print("Number of ties for general data " + str(len(gen_ties)))
-    print("Number of triads for genereal data " + str(len(gen_triads)))
+    #print("Number of ties for general data " + str(len(gen_ties)))
+    #print("Number of triads for genereal data " + str(len(gen_triads)))
 
     
 
