@@ -1,6 +1,7 @@
 import tweepy
 import pymongo
 import twitter_credentials
+import operator
 
 from pymongo import MongoClient
 from sklearn.cluster import KMeans
@@ -8,9 +9,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from heapq import nlargest
 from operator import itemgetter
 
-
-#Finds the most commonly used words in tweets, hashtags
-# and users through KMeans clustering
+'''
+Finds the most commonly used words in tweets, hashtags
+and users through KMeans clustering
+'''
 def tweetClustering(tweets, numOfClusters):
     
     tweetTexts = []
@@ -77,23 +79,31 @@ def tweetClustering(tweets, numOfClusters):
             print("\n")
             file.write("\n")'''
 
-#Finds most important usernames by ranking what users get mentioned the most
+
+'''
+Finds most important usernames by ranking what users get mentioned the most
+'''
 def powerUsers(tweets):
 
     users = {}
     for tweet in tweets:
         if (len(tweet['mentions']) > 0):
             for mention in tweet['mentions']:
-                if (mention != tweet['user']):
+                if (mention['screen_name'] != tweet['user']):
                     
-                    if (mention in users):
-                        users[mention] += 1
+                    if (mention['screen_name'] in users):
+                        users[mention['screen_name']] += 1
                     else:
-                        users[mention] = 1
+                        users[mention['screen_name']] = 1
     
-    print(users)
+    powerfulUsers = list(sorted(users.items(), key=operator.itemgetter(1), reverse=True)[:10])
+    return powerfulUsers
 
 
+'''
+This function calculates how much users are interacting with other users. It also monitors
+what hashtags are used alongisde each other.
+'''
 def tweetNetworks(tweets):
 
     #dictionaries represent user interaction
@@ -102,7 +112,7 @@ def tweetNetworks(tweets):
     normalMentions = {}
     retweetMentions = {}
     quoteMentions = {}
-    hashtagsCoOccurence = {}
+    hashtagsOccurences = {}
 
     for tweet in tweets:
 
@@ -143,9 +153,19 @@ def tweetNetworks(tweets):
 
         if (len(tweet['hashtags']) > 0):
             for hashtag in tweet['hashtags']:
-                pass
-
-
+                first = hashtag['text']
+                if first in hashtagsOccurences:
+                    for hashtag2 in tweet['hashtags']:
+                        if hashtag2['text'] != first and hashtag2['text'] not in hashtagsOccurences[first]:
+                            hashtagsOccurences[first].append(hashtag2['text'])
+                else:
+                    hashtagsOccurences[first] = []
+                    for hashtag2 in tweet['hashtags']:
+                        if hashtag2['text'] != first:
+                            hashtagsOccurences[first].append(hashtag2['text'])
+        
+    return normalMentions, retweetMentions, quoteMentions, hashtagsOccurences
+                
 
 if __name__ == "__main__":
 
@@ -164,10 +184,10 @@ if __name__ == "__main__":
     #tweetClustering(tweets, numOfClusters)
 
     #finds most mentioned users
-    powerUsers(tweets)
+    #print(powerUsers(tweets))
 
     #Find the networks for general data
-    #tweetNetworks(tweets)
+    tweetNetworks(tweets)
 
     #Find the networks for each cluster
     #for i in range(numOfClusters):
