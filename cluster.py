@@ -44,14 +44,14 @@ def tweetClustering(tweets, numOfClusters):
     modelText = KMeans(n_clusters=numOfClusters, init='k-means++', max_iter=100, n_init=1)
     labels = modelText.fit_predict(text)
 
-    clusterTweets = {}
+    clusterTweets =  [ [] for i in range(numOfClusters) ]
 
     #Calculates size of each cluster group (number of tweets used to make cluster)
     for i in range(len(tweets)):
-        if labels[i] in clusterTweets:
-            clusterTweets[labels[i]].append(tweets[i])
-        else:
-            clusterTweets[labels[i]] = [tweets[i]]
+        #if labels[i] in clusterTweets:
+        clusterTweets[labels[i]].append(tweets[i])
+        #else:
+        #clusterTweets[labels[i]] = [tweets[i]]
    
     centroids = modelText.cluster_centers_.argsort()[:, ::-1]
     termsText = vectorizer.get_feature_names()
@@ -230,20 +230,35 @@ if __name__ == "__main__":
     gen_normalMentions, gen_retweetMentions, gen_quoteMentions, gen_hashtagsOccurences = tweetNetworks(tweets)
 
     print("Normal mentions for general data has a size of " + str(len(gen_normalMentions.keys())))
-    print("Retween mentions for general data has a size of " + str(len(gen_retweetMentions.keys())))
+    print("Retweet mentions for general data has a size of " + str(len(gen_retweetMentions.keys())))
     print("Quote mentions for general data has a size of " + str(len(gen_quoteMentions.keys())))
     print("Hashtag co-ocurrences for general data has a size of " + str(len(gen_hashtagsOccurences.keys())))
 
-    #Find the networks for each cluster
-    for cluster in clusterTweets:
-        tweetNetworks(cluster)
+    clusterNetworks = [ [] for i in range(numOfClusters) ]
 
+    #Find the networks for each cluster
+    for i in range(numOfClusters):
+        print('\n')
+        clus_normalMentions, clus_retweetMentions, clus_quoteMentions, clus_hashtagsOccurences =  tweetNetworks(clusterTweets[i])
+        print("Normal mentions for cluster %d has a size of %s" %  (i, len(clus_normalMentions.keys())))
+        print("Retweet mentions for cluster %d has a size of %s" % (i, len(clus_retweetMentions.keys())))
+        print("Quote mentions for cluster %d has a size of %s" %  (i, len(clus_quoteMentions.keys())))
+        print("Hashtag co-ocurrences for cluster %d has a size of %s" %  (i, len(clus_hashtagsOccurences.keys())))
+        clusterNetworks[i] = [clus_normalMentions, clus_retweetMentions, clus_quoteMentions]
+
+    
     #Find the ties and triads for general data
-    #gen_ties, gen_triads= ties_triads(gen_normalMentions, gen_retweetMentions, gen_quoteMentions)
+    gen_ties, gen_triads= ties_triads(gen_normalMentions, gen_retweetMentions, gen_quoteMentions)
     #print(gen_ties)
     #print(gen_triads)
-    #print("Number of ties for general data " + str(len(gen_ties)))
-    #print("Number of triads for genereal data " + str(len(gen_triads)))
+    print("\nNumber of ties for general data is " + str(len(gen_ties)))
+    print("Number of triads for general data is " + str(len(gen_triads)))
+
+    for i in range(numOfClusters):
+        print('\n')
+        clus_ties, clus_triads = ties_triads(clusterNetworks[i][0],clusterNetworks[i][1],clusterNetworks[i][2])
+        print("Number of ties for cluster %d is %s" %  (i, len(clus_ties)))
+        print("Number of triads for cluster %d is %s" % (i, len(clus_triads)))
 
     
 
