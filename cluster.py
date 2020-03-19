@@ -166,6 +166,56 @@ def tweetNetworks(tweets):
         
     return normalMentions, retweetMentions, quoteMentions, hashtagsOccurences
                 
+def ties_triads(normalMentions, retweetMentions, quoteMentions):
+    ties = []
+    triads = []
+    
+    networks = [normalMentions, retweetMentions, quoteMentions]
+    
+    for network in networks:
+        for user1 in network:
+            for user2 in network[user1]:
+                
+                potentialTie = {user1,user2}
+                if potentialTie not in ties:
+                    ties.append(potentialTie)
+
+                if user2 in network:
+                    for user3 in network[user2]:
+                        
+                        potentialTriad = {user1,user2,user3}
+
+                        #Checks that the first node is not the same as the third node
+                        if (user1 != user3):
+                            triads.append(potentialTriad)
+    '''
+    for network in networks:
+        print (len(network.keys()))
+        for user1 in network.keys():
+            for user2 in network[user1]:
+                potentialTie = list([user1, user2])
+   
+                #If tie does not already exist then appends to tie list
+                if potentialTie not in ties:
+                    pass
+                    ties.append(potentialTie)
+
+     
+    for tie in ties:
+        baseTie = tie
+
+        for tieCompare in ties:
+            
+            #Checking that the ties nodes are connected and the third node is not the same as the first node
+            if (baseTie[1] == tieCompare[0] and baseTie[0] != tieCompare[1]):
+                potentialTriad = list([baseTie[0],baseTie[1],tieCompare[1]])
+
+                #If triad does not already exist then appends to triad list
+                if potentialTriad not in triads:
+                    triads.append(potentialTriad)
+    '''               
+
+    return ties, triads
 
 if __name__ == "__main__":
 
@@ -181,17 +231,25 @@ if __name__ == "__main__":
     numOfClusters = 10
 
     #retrieves most popular hashtags and words used in tweets
-    #tweetClustering(tweets, numOfClusters)
+    tweetClustering(tweets, numOfClusters)
 
     #finds most mentioned users
-    #print(powerUsers(tweets))
+    print(powerUsers(tweets))
 
     #Find the networks for general data
-    tweetNetworks(tweets)
+    gen_normalMentions, gen_retweetMentions, gen_quoteMentions, gen_hashtagsOccurences = tweetNetworks(tweets)
 
     #Find the networks for each cluster
     #for i in range(numOfClusters):
     #    tweetNetworks(cluster)
+
+    #Find the ties and triads for general data
+    gen_ties, gen_triads= ties_triads(gen_normalMentions, gen_retweetMentions, gen_quoteMentions)
+    #print(gen_ties)
+    #print(gen_triads)
+    print("Number of ties for general data " + str(len(gen_ties)))
+    print("Number of triads for genereal data " + str(len(gen_triads)))
+
     
 
 
