@@ -39,7 +39,7 @@ class StdOutListener(tweepy.streaming.StreamListener):
                 text = data.text
 
             #inserts tweet data into dictionary for insertion into the collection
-            tweet = {'_id': data.id_str, 'user': data.user.screen_name, 'text': text, "created": data.created_at,
+            tweet = {'_id': data.id_str, 'user': data.user.screen_name, 'text': text,
             "originalUser": originalUser, "type": typeOfTweet, "hashtags": data.entities['hashtags'],
             "mentions": data.entities['user_mentions']}
 
@@ -63,16 +63,11 @@ if __name__ == "__main__":
 
     # Cleares collections in database for new stream data
     for collection in db.list_collection_names():
+        print(collection)
         print(db[collection].drop())
 
     # Creates the collection
     collection = db['raw']
-
-    # Creates index to avoid insertion of duplicate tweets
-    #db.raw.create_index([('id', pymongo.ASCENDING)], unique=True)
-    
-    # Sets the stream time to an hour
-    #end = datetime.datetime.now() + datetime.timedelta(minutes=1)
 
     while (True):
         keywords = ["Trump", "Putin", "Xi Jinping", "corona", "covid-19"]

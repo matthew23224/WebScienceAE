@@ -1,12 +1,16 @@
 import tweepy
 import time
 import pymongo
+import csv
+import json
 from pymongo import MongoClient
 
 import twitter_credentials
 
 '''
 Using Rest API to stream tweets from specific users.
+It writes the mongodb collection of tweets to a json file
+so marker can run the cluster py file to see results.
 '''
 
 def captureTimeline(username):
@@ -28,22 +32,18 @@ def captureTimeline(username):
             originalUser = tweet["quoted_status"]["user"]["screen_name"]
         else:
             typeOfTweet = "normal"
-            
-        #checks if the tweet exceeds 140 characters
-        #fix to incldude truncated tweets
-        '''if (tweet['truncated']):
-            text = tweet["extended_tweet"]["full_text"]
-        else:
-            text = tweet["text"]'''
 
         #inserts tweet data into dictionary for insertion into the collection
-        tweet = {'_id': tweet['id_str'], 'user': tweet["user"]["screen_name"], 'text': tweet["text"], "created": tweet["created_at"],
+        tweet = {'_id': tweet['id_str'], 'user': tweet["user"]["screen_name"], 'text': tweet["text"],
         "originalUser": originalUser, "type": typeOfTweet,
-        "hashtags": tweet["entities"]['hashtags'], "mentions": tweet['entities']['user_mentions']}
+        "hashtags": tweet["entities"]['hashtags'], "mentions": tweet['entities']['user_mentions']} 
 
-        #inserts original tweet into collection 
-        collection.insert_one(tweet)
         print(tweet)
+        try:
+            collection.insert_one(tweet)
+        except Exception as e:
+            print(e)
+        
 
 if __name__ == "__main__":
 
@@ -65,5 +65,15 @@ if __name__ == "__main__":
                   'justinbieber','katyperry','Cristiano','Youtube','cnnbrk',
                   'ChinaDaily', 'PDChina', 'XHNews', 'TheEllenShow', 'JeremyClarkson']
 
+    #Streams timeline of each power user identified
     for user in powerUsers:
         captureTimeline(user)
+
+
+    #Writes streamed tweets to json file so marker can run cluster.py without streaming
+    with open('tweetData.json', 'w') as file:
+        tweets = []
+        tweets.extend(db['raw'].find())
+        for tweet in tweets:
+            json.dump(tweet, file)
+            file.write('\n')

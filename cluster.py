@@ -2,6 +2,7 @@ import tweepy
 import pymongo
 import twitter_credentials
 import operator
+import json
 
 from pymongo import MongoClient
 from sklearn.cluster import KMeans
@@ -24,7 +25,7 @@ def tweetClustering(tweets, numOfClusters):
         if raw.startswith('RT @'):
              raw = raw.split(":", 1)[1]
 
-        #doesnt work yet
+        #Prevents http from being term considered
         index = raw.find("http")
         if (index != -1):
             end = raw.find(" ", index)
@@ -48,46 +49,19 @@ def tweetClustering(tweets, numOfClusters):
 
     #Calculates size of each cluster group (number of tweets used to make cluster)
     for i in range(len(tweets)):
-        #if labels[i] in clusterTweets:
         clusterTweets[labels[i]].append(tweets[i])
-        #else:
-        #clusterTweets[labels[i]] = [tweets[i]]
    
     centroids = modelText.cluster_centers_.argsort()[:, ::-1]
     termsText = vectorizer.get_feature_names()
 
-    with open("textCluster.txt", "w") as file:
-
-        for i in range(numOfClusters):
-            print("Cluster %d\n" % (i))
-            file.write("Cluster %d\n" % (i))
-            for ind in centroids[i, :10]:
-                print(termsText[ind])
-                file.write(termsText[ind] + '\n')
-            print("\n")
-            file.write("\n")
     
-    
-    '''
-    Attempted to cluster hashtags however when writing to file I encounter errors
-    
-    hashtags = vectorizer.fit_transform(tweetTexts)
-    modelText = KMeans(n_clusters=numOfClusters, init='k-means++', max_iter=100, n_init=1)
-    modelText.fit(hashtags)
-   
-    centroids = modelText.cluster_centers_.argsort()[:, ::-1]
-    termsHashtags = vectorizer.get_feature_names()
+    #Displays the most commonly used terms per cluster of tweets
+    for i in range(numOfClusters):
+        print("Cluster %d\n" % (i))
+        for ind in centroids[i, :10]:
 
-    with open("hashtagCluster.txt", "w") as file:
-
-        for i in range(numOfClusters):
-            print("Cluster %d\n" % (i))
-            file.write("Cluster %d\n" % (i))
-            for ind in centroids[i, :10]:
-                print(termsHashtags[ind])
-                file.write(termsHashtags[ind] + '\n')
-            print("\n")
-            file.write("\n")'''
+            print(termsText[ind])
+        print("\n")
     
     return clusterTweets
 
@@ -124,6 +98,8 @@ def tweetNetworks(tweets):
     normalMentions = {}
     retweetMentions = {}
     quoteMentions = {}
+
+    #dictionary represents each hashtag used any the values are any other hashtags used alongside it
     hashtagsOccurences = {}
 
     for tweet in tweets:
@@ -211,11 +187,17 @@ if __name__ == "__main__":
     client = MongoClient('127.0.0.1', 27017)
 
     # Gets the database instance
-    db = client['tweets']
+    #db = client['tweets']
+
+    #tweets = []
+    #tweets.extend(db['raw'].find())
 
     tweets = []
-    tweets.extend(db['raw'].find())
+    with open('tweetData.json', 'r') as file:
+        for line in file:
+            tweets.append(json.loads(line))
     
+    #Sets k to 10
     numOfClusters = 10
 
     #finds most mentioned users
